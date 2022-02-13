@@ -65,3 +65,11 @@ sudo docker push ${HARBOR_IP}/${REPOSITORIES}:${TAG} &>/dev/null
     
     
     
+ 二、关于Jenkins构建方式可以有多种方式，还有可以选择pipeline方式构建：
+ 
+     配置gitlab地址；
+     指定Jenkinsfile，通过使用Jenkinsfile进行构建；
+    
+    
+    
+    
