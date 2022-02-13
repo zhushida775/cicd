@@ -7,3 +7,7 @@ java -jar slave.jar -jnlpUrl http://192.168.11.241/computer/slave%2002%20node/sl
 #workdir是在jenkins新增节点时候填写的
 docker run --name jenkins-slave02 -d --restart=unless-stopped jenkins/jnlp-slave  -url  http://192.168.11.241:8080 -workDir=/home/jenkins/agent02 57901575cac903e95a15598d00f5a1c97101d766a5c70933cf5c26f41axxxxx slave02
 
+
+slave节点
+slave节点采用docker方式安装，使用官方镜像jenkins/ssh-slave
+
