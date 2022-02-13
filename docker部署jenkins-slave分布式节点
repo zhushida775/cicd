@@ -1,0 +1,9 @@
+#docker 运行jenkins-slave示例，使用jnlp方式进行连接，即是agent主动连接master
+docker run jenkins/jnlp-slave -url http://jenkins-server:port -workDir=/home/jenkins/agent <secret> <agent name>
+
+#比如创建好节点后，他会提示如下命令运行，这是java方式直接运行
+java -jar slave.jar -jnlpUrl http://192.168.11.241/computer/slave%2002%20node/slave-agent.jnlp -secret 57901575cac903e95a15598d00f5a1c97101d766a5c70933cf5c26f41abxxxxx
+#这个是使用docker容器里运行jenkins-slave示例，关键点是把http，workdir， <secret> <agent name>等参数对应填写好
+#workdir是在jenkins新增节点时候填写的
+docker run --name jenkins-slave02 -d --restart=unless-stopped jenkins/jnlp-slave  -url  http://192.168.11.241:8080 -workDir=/home/jenkins/agent02 57901575cac903e95a15598d00f5a1c97101d766a5c70933cf5c26f41axxxxx slave02
+
