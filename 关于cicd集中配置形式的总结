@@ -1,0 +1,67 @@
+一、前期准备环境：
+部署docker+git+gitlab+Jenkins+harbor，其中harbor、gitlab和Jenkins可以配置集群或者是分布式；
+docker部分：
+部署docker注意如何harbor使用的是http方式需要在docker的daemon.json文件中配置私有镜像库配置：
+[root@VM000015271 ~]# cat /etc/docker/daemon.json 
+{
+   "registry-mirrors": ["https://aliyuncs.com"],  
+   "insecure-registries": ["http://IP:8089"]
+}
+注意这个要配置涉及所有docker部署端也要做相同的修改，如果公司内部有自己的harbor或者使用阿里云的默认https的可以忽略配置http的方式；
+
+gitlab部分：
+创建好自己的代码仓库，在使用客户端git clone  自己的代码库的时候可以使用https或者是ssh方式，如果是ssh方式可以自己在执行clone之后手工输入gitlab登录的用户名或者密码;也可以在gitlab管理员
+或者gitlab程序员自己的用户的客户端使用ssh-keygen方式生成公钥（是Linux系统客户端），在gitlab>ssh keys >将公钥文件的内容添加到新建sshkey中这样做之后可以自动免密码clone；
+使用https或者http方式登录方式可以使用创建好的用户密码登录；
+在gitlab管理中可以根据代码的需求或者部门按照部门创建用户，用户按照代码框架创建项目组或者分组方式；
+
+harbor部分：
+该部分可以创建集群或者单点也是可以的设置每个单点之间相互的同步，配置相关的证书等文件。
+同时创建对象项目的镜像库名称。
+
+Jenkins 部分：
+配置Jenkins 环境包括mvn环境信息、jdk环境信息、git环境信息；默认如果是使用yum方式部署可以默认；
+使用mvn方式构建代码：
+   前期部署安装好对应的插件；
+   可以配置分布式构建配置k8s中构建、配置在docker中构建、配置在主机中构建的方式；
+   使用maven方式构建可以前期在管理配置中设置：SSH remote hosts主机地址信息，这些主机用于maven构建中配置用于可以自动远程执行命令或者脚本；
+   创建好凭证用于后期项目使用如git免密码或者agent分布式构建或者文件ssh等方式；
+   构建maven项目；
+   配置gitlab地址如自己的gitlab地址http://gitlab.12.com:8929/root/ruoyi.git；
+   注意分支名称；
+   选择对应的触发器，根据自己的环境定义；
+   bulid块指定pom.xml和maven构建的命令（这个构建的命令要和开发确认一下）；
+   post steps 配置Run only if build succeeds ；
+   选择执行shell：
+JENKINS_WAR_HOME='/root/.jenkins/workspace/maven-ruoyi/ruoyi-admin/target'
+DOCKERFILE_HOME='/root/.jenkins/docker-file/maven-ruoyi'
+HARBOR_IP='ip:8089'
+REPOSITORIES='ruoyi/ruoyi'
+HARBOR_USER='admin'
+HARBOR_USER_PASSWD='apbc'
+ 
+# Copy the newest war to docker-file directory.
+\cp -f ${JENKINS_WAR_HOME}/ruoyi-admin.jar ${DOCKERFILE_HOME}/ruoyi-admin.jar
+ 
+# Delete image early version.
+sudo docker login -u ${HARBOR_USER} -p ${HARBOR_USER_PASSWD} ${HARBOR_IP} 
+IMAGE_ID=`sudo docker images | grep ${REPOSITORIES} | awk '{print $3}'`
+if [ -n "${IMAGE_ID}" ];then
+    sudo docker rmi ${IMAGE_ID}
+fi
+ 
+# Build image.
+cd ${DOCKERFILE_HOME}
+TAG=`date +%Y%m%d-%H%M%S`
+sudo docker build -t ${HARBOR_IP}/${REPOSITORIES}:${TAG} . &>/dev/null
+ 
+# Push to the harbor registry.
+sudo docker push ${HARBOR_IP}/${REPOSITORIES}:${TAG} &>/dev/null
+    以上主要是使用Jenkins拉取代码后将构建的镜像上传到harbor库里；
+
+    
+    
+    
+    
+    
+    
