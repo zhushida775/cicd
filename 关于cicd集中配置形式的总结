@@ -101,7 +101,23 @@ docker run -d --name tomcat-ruoyi -p 8080:8080 ${HARBOR_IP}/${REPOSITORIES}:${TA
     
 缺点就是批量构建之前需要配置节点主机；
 使用k8s配置发布就是  使用命令：
-kubectl  set   images
+获取image的具体版本号设置配置
+使用脚本修改yaml文件
+sed -i "s/\[BUILD_NUMBER\]/$BUILD_NUMBER/" ${WORKSPACE}/deploy/DaemonSet.yaml
+/opt/k8s/bin/kubectl apply -f ${WORKSPACE}/deploy/Namespace.yaml
+kubectl rollout status deployment/nginx-deploy   --查看状态
+kubectl rollout pause deployment <deployment>    --暂停升级
+kubectl rollout resume deployment <deployment>   --继续升级
+kubectl rollout history deployment nginx-deploy  --查看升级历史
+kubectl rollout undo deployment nginx-deploy     --回退到当前版本的前一个版本
+kubectl rollout undo deployment nginx-deploy --to-revision=2   --回退到指定的版本
+
+
+
+或者
+kubectl  set   images  
+kubectl set image ${DEPLOY_TYPE} -l ${DEPLOY_LABEL} ${CONTAINER_NAME}=${HARBOR_ADDRESS}/${REGISTRY_DIR}/${IMAGE_NAME}:${TAG} -n ${NAMESPACE}
+
     
  二、关于Jenkins构建方式可以有多种方式，还有可以选择pipeline方式构建：
  
