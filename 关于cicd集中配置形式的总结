@@ -59,11 +59,49 @@ sudo docker build -t ${HARBOR_IP}/${REPOSITORIES}:${TAG} . &>/dev/null
 sudo docker push ${HARBOR_IP}/${REPOSITORIES}:${TAG} &>/dev/null
     以上主要是使用Jenkins拉取代码后将构建的镜像上传到harbor库里；
 
+然后在maven构建的流水线总选择：
+“execute shell script on remote host using ssh 
+”
+以下是发布镜像的脚本：
+HARBOR_IP='192.166.84.79:8089'
+REPOSITORIES='ruoyi/ruoyi'
+HARBOR_USER='admin'
+HARBOR_USER_PASSWD='Harbor12345'
+ 
+# 登录harbor
+docker login -u ${HARBOR_USER} -p ${HARBOR_USER_PASSWD} ${HARBOR_IP}
+ 
+# Stop container, and delete the container.
+CONTAINER_ID=`docker ps | grep "tomcat-ruoyi" | awk '{print $1}'`
+if [ -n "$CONTAINER_ID" ]; then
+    docker stop $CONTAINER_ID
+    docker rm $CONTAINER_ID
+else #如果容器启动时失败了，就需要docker ps -a才能找到那个容器
+    CONTAINER_ID=`docker ps -a | grep "tomcat-ruoyi" | awk '{print $1}'`
+    if [ -n "$CONTAINER_ID" ]; then  # 如果是第一次在这台机器上拉取运行容器，那么docker ps -a也是找不到这个容器的
+        docker rm $CONTAINER_ID
+    fi
+fi
+ 
+# Delet ruoyi  image early version.
+IMAGE_ID=`sudo docker images | grep ${REPOSITORIES} | awk '{print $3}'`
+if [ -n "${IMAGE_ID}" ];then
+    docker rmi ${IMAGE_ID}
+fi
+ 
+# Pull image.
+# TAG=`curl -s http://${HARBOR_IP}/api/repositories/${REPOSITORIES}/tags | jq '.[-1]' | sed 's/\"//g'` 
+# TAG=`curl -s http://172.21.39.43/api/repositories/jenkins/maven-docker/tags | jq '.[-1]| {name:.name}' | awk -F '"' '/name/{print $4}'`
+TAG=`curl -u admin:Harbor12345 -s http://192.166.84.79:8089/api/v2.0/projects/ruoyi/repositories/ruoyi/artifacts |awk -F'name":"' '{print $2}'|cut -d '"' -f1`
+docker pull ${HARBOR_IP}/${REPOSITORIES}:${TAG} 
+#&>/dev/null
+ 
+# Run.
+docker run -d --name tomcat-ruoyi -p 8080:8080 ${HARBOR_IP}/${REPOSITORIES}:${TAG}
     
-    
-    
-    
-    
+缺点就是批量构建之前需要配置节点主机；
+使用k8s配置发布就是  使用命令：
+kubectl  set   images
     
  二、关于Jenkins构建方式可以有多种方式，还有可以选择pipeline方式构建：
  
